@@ -21,7 +21,9 @@
 
 ## 在线访问
 
-[部署链接]（待部署后填入）
+🔗 **GitHub:** https://github.com/zhuzz1997CN/smart-calculator
+
+🌐 **在线访问:** (Vercel 部署后填入)
 
 ## 作者
 
