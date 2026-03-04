@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="智能计算器 - 支持基础、科学、房贷计算">
+    <title>🧮 智能计算器</title>
+    <style>
+        /* ===== 重置样式 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ===== CSS 变量 ===== */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --display-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --btn-number: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --btn-operator: linear-gradient(135deg, #ffa751 0%, #ff6b6b 100%);
+            --btn-equals: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+            --btn-function: linear-gradient(135deg, #fc5c7d 0%, #6a82fb 100%);
+            --shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --shadow-hover: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ===== 全局样式 ===== */
+        body {
+            font-family: 'Segoe UI', 'SF Pro Display', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--primary-gradient);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 450px;
+            width: 100%;
+        }
+
+        /* ===== Header ===== */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            color: white;
+            font-size: 1.8rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ===== Tab 导航 ===== */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            box-shadow: var(--shadow);
+        }
+
+        /* ===== 计算器主体 ===== */
+        .calculator {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .display {
+            background: var(--display-gradient);
+            color: white;
+            font-size: 2.5rem;
+            padding: 25px;
+            text-align: right;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            min-height: 80px;
+            word-wrap: break-word;
+            box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight: 300;
+        }
+
+        /* ===== 按钮区域 ===== */
+        .buttons {
+            display: grid;
+            gap: 12px;
+        }
+
+        button:not(.tab) {
+            padding: 22px;
+            font-size: 1.4rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+        }
+
+        button:not(.tab):hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        button:not(.tab):active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-number {
+            background: var(--btn-number);
+            color: #2d3436;
+        }
+
+        .btn-operator {
+            background: var(--btn-operator);
+            color: white;
+        }
+
+        .btn-function {
+            background: var(--btn-function);
+            color: white;
+        }
+
+        .btn-equals {
+            background: var(--btn-equals);
+            color: white;
+        }
+
+        /* ===== 房贷表单样式 ===== */
+        .loan-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #2d3436;
+            font-size: 0.95rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .loan-result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f5f7fa;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .loan-result.show {
+            display: block;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .result-value {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 768px) {
+            .container {
+                max-width: 100%;
+            }
+            
+            .display {
+                font-size: 2rem;
+                padding: 20px;
+            }
+            
+            button:not(.tab) {
+                padding: 18px;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>🧮 智能计算器</h1>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tabs">
+            <button class="tab active" data-mode="basic">基础</button>
+            <button class="tab" data-mode="scientific">科学</button>
+            <button class="tab" data-mode="loan">房贷</button>
+        </nav>
+
+        <!-- Calculator Container -->
+        <div class="calculator">
+            <!-- Display -->
+            <div class="display" id="display">0</div>
+
+            <!-- Buttons Container (动态渲染) -->
+            <div class="buttons" id="buttons"></div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 全局状态 ==========
+        const state = {
+            currentMode: 'basic',
+            display: '0',
+            operator: null,
+            previousValue: null,
+            shouldResetDisplay: false,
+            angleMode: 'deg'
+        };
+
+        // ========== UI 控制器 ==========
+        const ui = {
+            updateDisplay(value) {
+                const display = document.getElementById('display');
+                display.textContent = value;
+                state.display = value;
+            },
+
+            switchTab(mode) {
+                state.currentMode = mode;
+                
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.mode === mode);
+                });
+                
+                this.renderButtons();
+                this.updateDisplay('0');
+                state.operator = null;
+                state.previousValue = null;
+                state.shouldResetDisplay = false;
+            },
+
+            renderButtons() {
+                const container = document.getElementById('buttons');
+                container.innerHTML = '';
+                
+                if (state.currentMode === 'basic') {
+                    this.renderBasicButtons(container);
+                } else if (state.currentMode === 'scientific') {
+                    this.renderScientificButtons(container);
+                } else {
+                    this.renderLoanForm(container);
+                }
+            },
+
+            renderBasicButtons(container) {
+                container.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                
+                const buttons = [
+                    { text: 'C', class: 'btn-function', span: 2 },
+                    { text: '←', class: 'btn-function' },
+                    { text: '÷', class: 'btn-operator' },
+                    
+                    { text: '7', class: 'btn-number' },
+                    { text: '8', class: 'btn-number' },
+                    { text: '9', class: 'btn-number' },
+                    { text: '×', class: 'btn-operator' },
+                    
+                    { text: '4', class: 'btn-number' },
+                    { text: '5', class: 'btn-number' },
+                    { text: '6', class: 'btn-number' },
+                    { text: '-', class: 'btn-operator' },
+                    
+                    { text: '1', class: 'btn-number' },
+                    { text: '2', class: 'btn-number' },
+                    { text: '3', class: 'btn-number' },
+                    { text: '+', class: 'btn-operator' },
+                    
+                    { text: '0', class: 'btn-number', span: 2 },
+                    { text: '.', class: 'btn-number' },
+                    { text: '=', class: 'btn-equals' }
+                ];
+                
+                buttons.forEach(btn => {
+                    const button = document.createElement('button');
+                    button.textContent = btn.text;
+                    button.className = btn.class;
+                    if (btn.span) button.style.gridColumn = `span ${btn.span}`;
+                    
+                    button.addEventListener('click', () => {
+                        if (btn.class === 'btn-number') {
+                            calculator.inputNumber(btn.text);
+                        } else if (btn.class === 'btn-operator') {
+                            calculator.inputOperator(btn.text);
+                        } else if (btn.class === 'btn-equals') {
+                            calculator.calculate();
+                        } else if (btn.text === 'C') {
+                            calculator.clear();
+                        } else if (btn.text === '←') {
+                            calculator.backspace();
+                        }
+                    });
+                    
+                    container.appendChild(button);
+                });
+            },
+
+            renderScientificButtons(container) {
+                container.style.gridTemplateColumns = 'repeat(5, 1fr)';
+                
+                const buttons = [
+                    { text: 'C', class: 'btn-function' },
+                    { text: '←', class: 'btn-function' },
+                    { text: '(', class: 'btn-operator' },
+                    { text: ')', class: 'btn-operator' },
+                    { text: '÷', class: 'btn-operator' },
+                    
+                    { text: 'sin', class: 'btn-function' },
+                    { text: 'cos', class: 'btn-function' },
+                    { text: 'tan', class: 'btn-function' },
+                    { text: '7', class: 'btn-number' },
+                    { text: '×', class: 'btn-operator' },
+                    
+                    { text: 'asin', class: 'btn-function' },
+                    { text: 'acos', class: 'btn-function' },
+                    { text: 'atan', class: 'btn-function' },
+                    { text: '8', class: 'btn-number' },
+                    { text: '-', class: 'btn-operator' },
+                    
+                    { text: 'log', class: 'btn-function' },
+                    { text: 'ln', class: 'btn-function' },
+                    { text: 'x²', class: 'btn-function' },
+                    { text: '9', class: 'btn-number' },
+                    { text: '+', class: 'btn-operator' },
+                    
+                    { text: 'xʸ', class: 'btn-function' },
+                    { text: '√', class: 'btn-function' },
+                    { text: 'eˣ', class: 'btn-function' },
+                    { text: '4', class: 'btn-number' },
+                    { text: '5', class: 'btn-number' },
+                    
+                    { text: 'π', class: 'btn-function' },
+                    { text: 'e', class: 'btn-function' },
+                    { text: 'deg', class: 'btn-function', id: 'angle-toggle' },
+                    { text: '6', class: 'btn-number' },
+                    { text: '1', class: 'btn-number' },
+                    
+                    { text: '2', class: 'btn-number' },
+                    { text: '3', class: 'btn-number' },
+                    { text: '0', class: 'btn-number' },
+                    { text: '.', class: 'btn-number' },
+                    { text: '=', class: 'btn-equals' }
+                ];
+                
+                buttons.forEach(btn => {
+                    const button = document.createElement('button');
+                    button.textContent = btn.text;
+                    button.className = btn.class;
+                    if (btn.id) button.id = btn.id;
+                    
+                    button.addEventListener('click', () => {
+                        const text = btn.text;
+                        
+                        if (btn.class === 'btn-number' && /^[0-9.]$/.test(text)) {
+                            calculator.inputNumber(text);
+                        } else if (['+', '-', '×', '÷'].includes(text)) {
+                            calculator.inputOperator(text);
+                        } else if (text === '=') {
+                            calculator.calculate();
+                        } else if (text === 'C') {
+                            calculator.clear();
+                        } else if (text === '←') {
+                            calculator.backspace();
+                        } else if (['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'log', 'ln', 'sqrt', 'exp'].includes(text)) {
+                            calculator.applyScientific(text);
+                        } else if (text === 'x²') {
+                            const current = parseFloat(state.display);
+                            state.display = (current * current).toString();
+                            state.shouldResetDisplay = true;
+                            ui.updateDisplay(state.display);
+                        } else if (text === '√') {
+                            calculator.applyScientific('sqrt');
+                        } else if (text === 'eˣ') {
+                            calculator.applyScientific('exp');
+                        } else if (['π', 'e'].includes(text)) {
+                            calculator.inputConstant(text);
+                        } else if (text === 'deg' || text === 'rad') {
+                            calculator.toggleAngleMode();
+                        }
+                    });
+                    
+                    container.appendChild(button);
+                });
+            },
+
+            renderLoanForm(container) {
+                container.style.gridTemplateColumns = '1fr';
+                
+                const form = document.createElement('div');
+                form.className = 'loan-form';
+                form.innerHTML = `
+                    <div class="form-group">
+                        <label for="loan-type">贷款类型</label>
+                        <select id="loan-type">
+                            <option value="commercial">商业贷款</option>
+                            <option value="provident">公积金贷款</option>
+                            <option value="combo">组合贷款</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="loan-amount">贷款金额（万元）</label>
+                        <input type="number" id="loan-amount" placeholder="例如：100" min="0" step="0.1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="loan-rate">年利率（%）</label>
+                        <input type="number" id="loan-rate" placeholder="例如：4.9" min="0" max="20" step="0.01" value="4.9">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="loan-years">贷款年限（年）</label>
+                        <select id="loan-years">
+                            <option value="5">5年</option>
+                            <option value="10">10年</option>
+                            <option value="15">15年</option>
+                            <option value="20">20年</option>
+                            <option value="25">25年</option>
+                            <option value="30" selected>30年</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="repayment-type">还款方式</label>
+                        <select id="repayment-type">
+                            <option value="equal-payment">等额本息</option>
+                            <option value="equal-principal">等额本金</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn-equals" onclick="calculator.calculateLoan()" style="margin-top: 10px;">
+                        计算
+                    </button>
+                    
+                    <div class="loan-result" id="loan-result">
+                        <div class="result-item">
+                            <span class="result-label">月供金额：</span>
+                            <span class="result-value" id="monthly-payment">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">总利息：</span>
+                            <span class="result-value" id="total-interest">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">总还款：</span>
+                            <span class="result-value" id="total-repayment">-</span>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(form);
+            }
+        };
+
+        // ========== 计算器逻辑 ==========
+        const calculator = {
+            inputNumber(num) {
+                if (state.shouldResetDisplay) {
+                    state.display = num;
+                    state.shouldResetDisplay = false;
+                } else {
+                    if (state.display === '0' && num !== '.') {
+                        state.display = num;
+                    } else if (num === '.' && state.display.includes('.')) {
+                        return;
+                    } else {
+                        state.display += num;
+                    }
+                }
+                ui.updateDisplay(state.display);
+            },
+
+            inputOperator(op) {
+                if (state.operator && !state.shouldResetDisplay) {
+                    this.calculate();
+                }
+                state.operator = op;
+                state.previousValue = state.display;
+                state.shouldResetDisplay = true;
+            },
+
+            calculate() {
+                if (!state.operator || !state.previousValue) return;
+                
+                const prev = parseFloat(state.previousValue);
+                const current = parseFloat(state.display);
+                let result;
+                
+                switch (state.operator) {
+                    case '+':
+                        result = prev + current;
+                        break;
+                    case '-':
+                        result = prev - current;
+                        break;
+                    case '×':
+                        result = prev * current;
+                        break;
+                    case '÷':
+                        if (current === 0) {
+                            ui.updateDisplay('错误');
+                            setTimeout(() => this.clear(), 1500);
+                            return;
+                        }
+                        result = prev / current;
+                        break;
+                    default:
+                        return;
+                }
+                
+                state.display = parseFloat(result.toFixed(8)).toString();
+                state.operator = null;
+                state.previousValue = null;
+                state.shouldResetDisplay = true;
+                ui.updateDisplay(state.display);
+            },
+
+            clear() {
+                state.display = '0';
+                state.operator = null;
+                state.previousValue = null;
+                state.shouldResetDisplay = false;
+                ui.updateDisplay(state.display);
+            },
+
+            backspace() {
+                if (state.display.length > 1) {
+                    state.display = state.display.slice(0, -1);
+                } else {
+                    state.display = '0';
+                }
+                ui.updateDisplay(state.display);
+            },
+
+            // 科学函数
+            scientific: {
+                sin(x) {
+                    const rad = state.angleMode === 'deg' ? x * Math.PI / 180 : x;
+                    return Math.sin(rad);
+                },
+                cos(x) {
+                    const rad = state.angleMode === 'deg' ? x * Math.PI / 180 : x;
+                    return Math.cos(rad);
+                },
+                tan(x) {
+                    const rad = state.angleMode === 'deg' ? x * Math.PI / 180 : x;
+                    return Math.tan(rad);
+                },
+                asin(x) {
+                    const result = Math.asin(x);
+                    return state.angleMode === 'deg' ? result * 180 / Math.PI : result;
+                },
+                acos(x) {
+                    const result = Math.acos(x);
+                    return state.angleMode === 'deg' ? result * 180 / Math.PI : result;
+                },
+                atan(x) {
+                    const result = Math.atan(x);
+                    return state.angleMode === 'deg' ? result * 180 / Math.PI : result;
+                },
+                log(x) {
+                    return Math.log10(x);
+                },
+                ln(x) {
+                    return Math.log(x);
+                },
+                sqrt(x) {
+                    return Math.sqrt(x);
+                },
+                exp(x) {
+                    return Math.exp(x);
+                }
+            },
+
+            applyScientific(func) {
+                const current = parseFloat(state.display);
+                let result;
+                
+                try {
+                    result = this.scientific[func](current);
+                    
+                    if (isNaN(result) || !isFinite(result)) {
+                        ui.updateDisplay('数学错误');
+                        setTimeout(() => this.clear(), 1500);
+                        return;
+                    }
+                    
+                    state.display = parseFloat(result.toFixed(8)).toString();
+                    state.shouldResetDisplay = true;
+                    ui.updateDisplay(state.display);
+                } catch (e) {
+                    ui.updateDisplay('错误');
+                    setTimeout(() => this.clear(), 1500);
+                }
+            },
+
+            inputConstant(constant) {
+                const value = constant === 'π' ? Math.PI : Math.E;
+                state.display = parseFloat(value.toFixed(8)).toString();
+                state.shouldResetDisplay = true;
+                ui.updateDisplay(state.display);
+            },
+
+            toggleAngleMode() {
+                state.angleMode = state.angleMode === 'deg' ? 'rad' : 'deg';
+                const btn = document.getElementById('angle-toggle');
+                if (btn) btn.textContent = state.angleMode;
+            },
+
+            calculateLoan() {
+                const amount = parseFloat(document.getElementById('loan-amount').value) * 10000;
+                const rate = parseFloat(document.getElementById('loan-rate').value);
+                const years = parseInt(document.getElementById('loan-years').value);
+                const type = document.getElementById('repayment-type').value;
+                
+                if (!amount || amount <= 0) {
+                    alert('请输入有效的贷款金额');
+                    return;
+                }
+                
+                if (!rate || rate <= 0) {
+                    alert('请输入有效的利率');
+                    return;
+                }
+                
+                const months = years * 12;
+                const monthlyRate = rate / 100 / 12;
+                
+                let monthlyPayment, totalInterest, totalRepayment;
+                
+                if (type === 'equal-payment') {
+                    monthlyPayment = amount * monthlyRate * Math.pow(1 + monthlyRate, months) 
+                                    / (Math.pow(1 + monthlyRate, months) - 1);
+                    totalRepayment = monthlyPayment * months;
+                    totalInterest = totalRepayment - amount;
+                } else {
+                    const monthlyPrincipal = amount / months;
+                    let totalPaid = 0;
+                    
+                    for (let i = 1; i <= months; i++) {
+                        const remainingPrincipal = amount - monthlyPrincipal * (i - 1);
+                        const monthlyInterest = remainingPrincipal * monthlyRate;
+                        totalPaid += monthlyPrincipal + monthlyInterest;
+                    }
+                    
+                    monthlyPayment = monthlyPrincipal + amount * monthlyRate;
+                    totalRepayment = totalPaid;
+                    totalInterest = totalRepayment - amount;
+                }
+                
+                document.getElementById('monthly-payment').textContent = 
+                    `¥${monthlyPayment.toFixed(2)} ${type === 'equal-principal' ? '（首月，递减）' : ''}`;
+                document.getElementById('total-interest').textContent = 
+                    `¥${totalInterest.toFixed(2)}`;
+                document.getElementById('total-repayment').textContent = 
+                    `¥${totalRepayment.toFixed(2)}`;
+                
+                document.getElementById('loan-result').classList.add('show');
+            }
+        };
+
+        // ========== 初始化 ==========
+        function init() {
+            console.log('🧮 智能计算器初始化...');
+            
+            // 绑定 Tab 切换
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    ui.switchTab(tab.dataset.mode);
+                });
+            });
+            
+            // 渲染初始按钮
+            ui.renderButtons();
+            
+            // 键盘支持
+            document.addEventListener('keydown', (e) => {
+                if (state.currentMode === 'loan') return;
+                
+                const key = e.key;
+                
+                if (key >= '0' && key <= '9') {
+                    calculator.inputNumber(key);
+                } else if (key === '.') {
+                    calculator.inputNumber('.');
+                } else if (key === '+') {
+                    calculator.inputOperator('+');
+                } else if (key === '-') {
+                    calculator.inputOperator('-');
+                } else if (key === '*') {
+                    calculator.inputOperator('×');
+                } else if (key === '/') {
+                    e.preventDefault();
+                    calculator.inputOperator('÷');
+                } else if (key === 'Enter' || key === '=') {
+                    calculator.calculate();
+                } else if (key === 'Escape' || key.toLowerCase() === 'c') {
+                    calculator.clear();
+                } else if (key === 'Backspace') {
+                    calculator.backspace();
+                } else if (state.currentMode === 'scientific') {
+                    if (key.toLowerCase() === 's') {
+                        calculator.applyScientific('sin');
+                    } else if (key.toLowerCase() === 't') {
+                        calculator.applyScientific('tan');
+                    } else if (key.toLowerCase() === 'p') {
+                        calculator.inputConstant('π');
+                    } else if (key.toLowerCase() === 'e') {
+                        calculator.inputConstant('e');
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
